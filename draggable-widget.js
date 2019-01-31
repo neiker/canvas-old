@@ -24,6 +24,8 @@ const styles = StyleSheet.create({
 });
 
 
+const ON_DELTA_MOVE_THROTTLE = 100;
+
 export default class WidgetDraggable extends React.Component {
   constructor(props) {
     super(props);
@@ -50,46 +52,53 @@ export default class WidgetDraggable extends React.Component {
       {
         useNativeDriver: true,
         listener: ({ nativeEvent }) => {
-          this.onMove({
-            x: nativeEvent.translationX,
-            y: nativeEvent.translationY,
+          this.onDeltaMove({
+            translationX: nativeEvent.translationX,
+            translationY: nativeEvent.translationY,
           });
         },
       },
     );
   }
 
-  onMove = throttle((translation) => {
-    const {
-      onMove,
-      widget,
-    } = this.props;
-
-    onMove({
-      id: widget.id,
-      x: this._lastOffset.x + translation.x,
-      y: this._lastOffset.y + translation.y,
+  onDeltaMove = throttle((event) => {
+    this.onMove({
+      x: this._lastOffset.x + event.translationX,
+      y: this._lastOffset.y + event.translationY,
     });
-  }, 500)
+  }, ON_DELTA_MOVE_THROTTLE)
 
-  _onHandlerStateChange = (event) => {
+
+  onMove = (event) => {
     const {
       onMove,
       widget,
     } = this.props;
 
-    if (event.nativeEvent.oldState === State.ACTIVE) {
-      this._lastOffset.x += event.nativeEvent.translationX;
-      this._lastOffset.y += event.nativeEvent.translationY;
+    if (this.moving) {
+      onMove({
+        id: widget.id,
+        ...event,
+      });
+    }
+  };
+
+  _onHandlerStateChange = ({ nativeEvent }) => {
+    if (nativeEvent.state === State.BEGAN) {
+      this.moving = true;
+    } else if (nativeEvent.oldState === State.ACTIVE) {
+      this._lastOffset.x += nativeEvent.translationX;
+      this._lastOffset.y += nativeEvent.translationY;
       this._translateX.setOffset(this._lastOffset.x);
       this._translateX.setValue(0);
       this._translateY.setOffset(this._lastOffset.y);
       this._translateY.setValue(0);
 
-      onMove({
-        id: widget.id,
+      this.onMove({
         ...this._lastOffset,
       });
+
+      this.moving = false;
     }
   };
 
