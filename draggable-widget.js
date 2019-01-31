@@ -6,6 +6,10 @@ import {
 } from 'react-native';
 
 import {
+  throttle,
+} from 'lodash';
+
+import {
   State,
   PanGestureHandler,
 } from 'react-native-gesture-handler';
@@ -45,22 +49,28 @@ export default class WidgetDraggable extends React.Component {
       ],
       {
         useNativeDriver: true,
-        listener: (event) => {
-          const {
-            translationX,
-            translationY,
-          } = event.nativeEvent;
-
-          console.log('====================================');
-          console.log({
-            translationX: this._lastOffset.x + translationX,
-            translationY: this._lastOffset.y + translationY,
+        listener: ({ nativeEvent }) => {
+          this.onMove({
+            x: nativeEvent.translationX,
+            y: nativeEvent.translationY,
           });
-          console.log('====================================');
         },
       },
     );
   }
+
+  onMove = throttle((translation) => {
+    const {
+      onMove,
+      widget,
+    } = this.props;
+
+    onMove({
+      id: widget.id,
+      x: this._lastOffset.x + translation.x,
+      y: this._lastOffset.y + translation.y,
+    });
+  }, 500)
 
   _onHandlerStateChange = (event) => {
     const {
