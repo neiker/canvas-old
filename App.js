@@ -73,6 +73,7 @@ function getRandomWidgets(size = 5) {
       width: WIDGET_SIZE,
       height: WIDGET_SIZE,
       backgroundColor: randomColor(),
+      selected: false,
     };
   });
 }
@@ -138,6 +139,29 @@ export default class App extends React.Component<Props> {
     }));
   }
 
+  onLongPressWidget = ({ id }) => {
+    console.log('onLongPressWidget', id);
+
+    // this.setState(state => ({
+    //   widgets: state.widgets.map((widget) => {
+    //     if (widget.id !== id) {
+    //       if (widget.selected) {
+    //         return {
+    //           ...widget,
+    //           selected: false,
+    //         };
+    //       }
+
+    //       return widget;
+    //     }
+
+    //     return {
+    //       ...widget,
+    //       selected: !widget.selected,
+    //     };
+    //   }),
+    // }));
+  }
 
   onTapCanvas = () => {
     console.log('onTapCanvas');
@@ -182,6 +206,7 @@ export default class App extends React.Component<Props> {
                 widget={widget}
                 onMove={this.onMoveWidget}
                 onTap={this.onTapWidget}
+                onLongPress={this.onLongPressWidget}
               />
             ))}
           </View>

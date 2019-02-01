@@ -13,6 +13,7 @@ import {
   State,
   PanGestureHandler,
   TapGestureHandler,
+  LongPressGestureHandler,
 } from 'react-native-gesture-handler';
 
 import Widget from './widget';
@@ -30,6 +31,12 @@ const ON_DELTA_MOVE_THROTTLE = 100;
 export default class WidgetDraggable extends React.Component {
   panRef = React.createRef();
 
+  longpressRef = React.createRef();
+
+  state = {
+    holding: false,
+  }
+
   constructor(props) {
     super(props);
     const { widget } = this.props;
@@ -43,7 +50,7 @@ export default class WidgetDraggable extends React.Component {
     this._translateY.setOffset(this._lastOffset.y);
 
 
-    this._onGestureEvent = Animated.event(
+    this._onPanGestureEvent = Animated.event(
       [
         {
           nativeEvent: {
@@ -118,39 +125,70 @@ export default class WidgetDraggable extends React.Component {
     }
   }
 
+  _onLongPressHandlerStateChange = ({ nativeEvent }) => {
+    const {
+      onLongPress,
+      widget,
+    } = this.props;
+
+    console.log('====================================');
+    console.log(nativeEvent);
+    console.log('====================================');
+
+    if (nativeEvent.state === State.ACTIVE) {
+      onLongPress({
+        id: widget.id,
+      });
+      this.setState({ holding: true });
+    } else if (nativeEvent.oldState === State.ACTIVE) {
+      this.setState({ holding: false });
+    }
+  }
+
   render() {
     const { widget } = this.props;
+    const { holding } = this.state;
 
     return (
-      <TapGestureHandler
-        onHandlerStateChange={this._onTapHandlerStateChange}
-        waitFor={this.panRef}
+      <LongPressGestureHandler
+        onHandlerStateChange={this._onLongPressHandlerStateChange}
+        minDurationMs={300}
+        simultaneousHandlers={this.panRef}
+        ref={this.longpressRef}
       >
-        <Animated.View>
-          <PanGestureHandler
-            onGestureEvent={this._onGestureEvent}
-            onHandlerStateChange={this._onHandlerStateChange}
-            maxPointers={1}
-            ref={this.panRef}
-          >
-            <Animated.View
-              style={[
-                styles.item,
-                {
-                  transform: [
-                    { translateX: this._translateX },
-                    { translateY: this._translateY },
-                  ],
-                },
-              ]}
+        <TapGestureHandler
+          onHandlerStateChange={this._onTapHandlerStateChange}
+          waitFor={this.panRef}
+        >
+          <Animated.View>
+            <PanGestureHandler
+              onGestureEvent={this._onPanGestureEvent}
+              onHandlerStateChange={this._onHandlerStateChange}
+              minPointers={1}
+              maxPointers={1}
+              enabled={holding || widget.selected}
+              ref={this.panRef}
+              simultaneousHandlers={this.longpressRef}
             >
+              <Animated.View
+                style={[
+                  styles.item,
+                  {
+                    transform: [
+                      { translateX: this._translateX },
+                      { translateY: this._translateY },
+                    ],
+                  },
+                ]}
+              >
 
-              <Widget widget={widget} />
+                <Widget widget={widget} />
 
-            </Animated.View>
-          </PanGestureHandler>
-        </Animated.View>
-      </TapGestureHandler>
+              </Animated.View>
+            </PanGestureHandler>
+          </Animated.View>
+        </TapGestureHandler>
+      </LongPressGestureHandler>
     );
   }
 }
