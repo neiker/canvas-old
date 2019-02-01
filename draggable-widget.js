@@ -12,6 +12,7 @@ import {
 import {
   State,
   PanGestureHandler,
+  TapGestureHandler,
 } from 'react-native-gesture-handler';
 
 import Widget from './widget';
@@ -27,6 +28,8 @@ const styles = StyleSheet.create({
 const ON_DELTA_MOVE_THROTTLE = 100;
 
 export default class WidgetDraggable extends React.Component {
+  panRef = React.createRef();
+
   constructor(props) {
     super(props);
     const { widget } = this.props;
@@ -75,7 +78,7 @@ export default class WidgetDraggable extends React.Component {
       widget,
     } = this.props;
 
-    if (this.moving) {
+    if (this.dragging) {
       onMove({
         id: widget.id,
         ...event,
@@ -85,7 +88,7 @@ export default class WidgetDraggable extends React.Component {
 
   _onHandlerStateChange = ({ nativeEvent }) => {
     if (nativeEvent.state === State.BEGAN) {
-      this.moving = true;
+      this.dragging = true;
     } else if (nativeEvent.oldState === State.ACTIVE) {
       this._lastOffset.x += nativeEvent.translationX;
       this._lastOffset.y += nativeEvent.translationY;
@@ -98,32 +101,60 @@ export default class WidgetDraggable extends React.Component {
         ...this._lastOffset,
       });
 
-      this.moving = false;
+      this.dragging = false;
     }
-  };
+  }
+
+  _onTapHandlerStateChange = ({ nativeEvent }) => {
+    const {
+      onTap,
+      widget,
+    } = this.props;
+
+    console.log('====================================');
+    console.log('_onTapHandlerStateChange widget', nativeEvent.state, State);
+    console.log('====================================');
+    if (nativeEvent.state === State.ACTIVE) {
+      onTap({
+        id: widget.id,
+      });
+    }
+  }
 
   render() {
     const { widget } = this.props;
 
     return (
-      <PanGestureHandler
-        onGestureEvent={this._onGestureEvent}
-        onHandlerStateChange={this._onHandlerStateChange}
+      <TapGestureHandler
+        onHandlerStateChange={this._onTapHandlerStateChange}
+        waitFor={this.panRef}
+        ref={widget.tapRef}
       >
-        <Animated.View
-          style={[
-            styles.item,
-            {
-              transform: [
-                { translateX: this._translateX },
-                { translateY: this._translateY },
-              ],
-            },
-          ]}
-        >
-          <Widget widget={widget} />
+        <Animated.View>
+          <PanGestureHandler
+            onGestureEvent={this._onGestureEvent}
+            onHandlerStateChange={this._onHandlerStateChange}
+            maxPointers={1}
+            ref={this.panRef}
+          >
+            <Animated.View
+              style={[
+                styles.item,
+                {
+                  transform: [
+                    { translateX: this._translateX },
+                    { translateY: this._translateY },
+                  ],
+                },
+              ]}
+            >
+
+              <Widget widget={widget} />
+
+            </Animated.View>
+          </PanGestureHandler>
         </Animated.View>
-      </PanGestureHandler>
+      </TapGestureHandler>
     );
   }
 }

@@ -10,13 +10,22 @@
 import React from 'react';
 import {
   StyleSheet,
+  View,
 } from 'react-native';
+
+import randomColor from 'randomcolor';
 
 import {
   ScrollView,
+  TapGestureHandler,
+  State,
 } from 'react-native-gesture-handler';
 
 import WidgetDraggable from './draggable-widget';
+
+const CANVAS_WIDTH = 3000;
+const CANVAS_HEIGHT = 2000;
+const WIDGET_SIZE = 132;
 
 const styles = StyleSheet.create({
   container: {
@@ -25,8 +34,8 @@ const styles = StyleSheet.create({
   },
   contentContainerStyle: {
     backgroundColor: '#fafafa',
-    width: 2000,
-    height: 1000,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
   },
@@ -49,39 +58,94 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min);
 }
 
+function getRandomWidgets(size = 5) {
+  // eslint-disable-next-line
+  return Array.apply(null, Array(size)).map(function (_, index) {
+    return {
+      id: index,
+      x: getRandomInt(0, CANVAS_WIDTH - WIDGET_SIZE),
+      y: getRandomInt(0, CANVAS_HEIGHT - WIDGET_SIZE),
+      width: WIDGET_SIZE,
+      height: WIDGET_SIZE,
+      backgroundColor: randomColor(),
+      tapRef: React.createRef(),
+    };
+  });
+}
+
 type Props = {};
 export default class App extends React.Component<Props> {
   state = {
-    widgets: [
-      {
-        id: 1,
-        x: getRandomInt(0, 1000),
-        y: getRandomInt(0, 500),
-        width: 100,
-        height: 100,
-        backgroundColor: 'red',
-      },
-      {
-        id: 2,
-        x: getRandomInt(0, 1000),
-        y: getRandomInt(0, 500),
-        width: 100,
-        height: 100,
-        backgroundColor: 'green',
-      },
-      {
-        id: 3,
-        x: getRandomInt(0, 1000),
-        y: getRandomInt(0, 500),
-        width: 100,
-        height: 100,
-        backgroundColor: 'blue',
-      },
-    ],
+    widgets: getRandomWidgets(100),
   }
 
-  onMove = (newPosition) => {
-    console.log('onMove', newPosition);
+  _onTapHandlerStateChange = ({ nativeEvent }) => {
+    console.log('====================================');
+    console.log('_onTapHandlerStateChange canvas', nativeEvent.state, State);
+    console.log('====================================');
+    if (nativeEvent.state === State.ACTIVE) {
+      this.onTapCanvas();
+    }
+  }
+
+  onMoveWidget = ({ id, x, y }) => {
+    console.log('onMoveWidget', { id, x, y });
+
+    this.setState(state => ({
+      widgets: state.widgets.map((widget) => {
+        if (widget.id !== id) {
+          return widget;
+        }
+
+        return {
+          ...widget,
+          x,
+          y,
+        };
+      }),
+    }));
+  }
+
+  onTapWidget = ({ id }) => {
+    console.log('onTapWidget', id);
+
+    this.setState(state => ({
+      widgets: state.widgets.map((widget) => {
+        if (widget.id !== id) {
+          if (widget.selected) {
+            return {
+              ...widget,
+              selected: false,
+            };
+          }
+
+          return widget;
+        }
+
+        return {
+          ...widget,
+          selected: !widget.selected,
+        };
+      }),
+    }));
+  }
+
+
+  onTapCanvas = () => {
+    console.log('onTapCanvas');
+
+    this.setState(state => ({
+      widgets: state.widgets.map((widget) => {
+        if (widget.selected) {
+          return {
+            ...widget,
+            selected: false,
+          };
+        }
+
+        return widget;
+      }),
+    }));
   }
 
   render() {
@@ -100,9 +164,21 @@ export default class App extends React.Component<Props> {
         style={styles.container}
         contentContainerStyle={styles.contentContainerStyle}
       >
-        {widgets.map(widget => (
-          <WidgetDraggable key={widget.id} widget={widget} onMove={this.onMove} />
-        ))}
+        <TapGestureHandler
+          onHandlerStateChange={this._onTapHandlerStateChange}
+          waitFor={widgets.map(widget => widget.tapRef)}
+        >
+          <View>
+            {widgets.map(widget => (
+              <WidgetDraggable
+                key={widget.id}
+                widget={widget}
+                onMove={this.onMoveWidget}
+                onTap={this.onTapWidget}
+              />
+            ))}
+          </View>
+        </TapGestureHandler>
       </ScrollView>
     );
   }
