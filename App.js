@@ -39,13 +39,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
   },
-
+  canvas: {
+    backgroundColor: '#fafafa',
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+  },
   item: {
     flex: 1,
     position: 'absolute',
   },
 });
 
+console.disableYellowBox = true;
 
 const CONTENT_INSET = {
   top: 100,
@@ -68,7 +73,6 @@ function getRandomWidgets(size = 5) {
       width: WIDGET_SIZE,
       height: WIDGET_SIZE,
       backgroundColor: randomColor(),
-      tapRef: React.createRef(),
     };
   });
 }
@@ -80,9 +84,6 @@ export default class App extends React.Component<Props> {
   }
 
   _onTapHandlerStateChange = ({ nativeEvent }) => {
-    console.log('====================================');
-    console.log('_onTapHandlerStateChange canvas', nativeEvent.state, State);
-    console.log('====================================');
     if (nativeEvent.state === State.ACTIVE) {
       this.onTapCanvas();
     }
@@ -94,6 +95,13 @@ export default class App extends React.Component<Props> {
     this.setState(state => ({
       widgets: state.widgets.map((widget) => {
         if (widget.id !== id) {
+          if (widget.selected) {
+            return {
+              ...widget,
+              selected: false,
+            };
+          }
+
           return widget;
         }
 
@@ -166,9 +174,8 @@ export default class App extends React.Component<Props> {
       >
         <TapGestureHandler
           onHandlerStateChange={this._onTapHandlerStateChange}
-          waitFor={widgets.map(widget => widget.tapRef)}
         >
-          <View>
+          <View style={styles.canvas}>
             {widgets.map(widget => (
               <WidgetDraggable
                 key={widget.id}

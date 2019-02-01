@@ -111,9 +111,6 @@ export default class WidgetDraggable extends React.Component {
       widget,
     } = this.props;
 
-    console.log('====================================');
-    console.log('_onTapHandlerStateChange widget', nativeEvent.state, State);
-    console.log('====================================');
     if (nativeEvent.state === State.ACTIVE) {
       onTap({
         id: widget.id,
@@ -128,7 +125,6 @@ export default class WidgetDraggable extends React.Component {
       <TapGestureHandler
         onHandlerStateChange={this._onTapHandlerStateChange}
         waitFor={this.panRef}
-        ref={widget.tapRef}
       >
         <Animated.View>
           <PanGestureHandler
