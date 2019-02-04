@@ -13,7 +13,6 @@ import {
   State,
   PanGestureHandler,
   TapGestureHandler,
-  LongPressGestureHandler,
 } from 'react-native-gesture-handler';
 
 import Widget from './widget';
@@ -29,12 +28,10 @@ const styles = StyleSheet.create({
 const ON_DELTA_MOVE_THROTTLE = 100;
 
 export default class WidgetDraggable extends React.Component {
-  panRef = React.createRef();
-
-  longpressRef = React.createRef();
+  tapRef = React.createRef();
 
   state = {
-    holding: false,
+    dragging: false,
   }
 
   constructor(props) {
@@ -95,7 +92,7 @@ export default class WidgetDraggable extends React.Component {
 
   _onHandlerStateChange = ({ nativeEvent }) => {
     if (nativeEvent.state === State.BEGAN) {
-      this.dragging = true;
+      this.setState({ dragging: true });
     } else if (nativeEvent.oldState === State.ACTIVE) {
       this._lastOffset.x += nativeEvent.translationX;
       this._lastOffset.y += nativeEvent.translationY;
@@ -108,7 +105,7 @@ export default class WidgetDraggable extends React.Component {
         ...this._lastOffset,
       });
 
-      this.dragging = false;
+      this.setState({ dragging: false });
     }
   }
 
@@ -139,56 +136,45 @@ export default class WidgetDraggable extends React.Component {
       onLongPress({
         id: widget.id,
       });
-      this.setState({ holding: true });
-    } else if (nativeEvent.oldState === State.ACTIVE) {
-      this.setState({ holding: false });
     }
   }
 
   render() {
     const { widget } = this.props;
-    const { holding } = this.state;
+    const { dragging } = this.state;
 
     return (
-      <LongPressGestureHandler
-        onHandlerStateChange={this._onLongPressHandlerStateChange}
-        minDurationMs={300}
-        simultaneousHandlers={this.panRef}
-        ref={this.longpressRef}
+      <TapGestureHandler
+        onHandlerStateChange={this._onTapHandlerStateChange} // This will made the widget `selected`
+        ref={this.tapRef}
+        maxDurationMs={500}
+        numberOfTaps={1}
+        maxDist={5} // User move they finger so ScrollView must receive the event
       >
-        <TapGestureHandler
-          onHandlerStateChange={this._onTapHandlerStateChange}
-          waitFor={this.panRef}
-        >
-          <Animated.View>
-            <PanGestureHandler
-              onGestureEvent={this._onPanGestureEvent}
-              onHandlerStateChange={this._onHandlerStateChange}
-              minPointers={1}
-              maxPointers={1}
-              enabled={holding || widget.selected}
-              ref={this.panRef}
-              simultaneousHandlers={this.longpressRef}
+        <Animated.View>
+          <PanGestureHandler
+            onGestureEvent={this._onPanGestureEvent}
+            onHandlerStateChange={this._onHandlerStateChange}
+            minPointers={1}
+            maxPointers={1}
+            waitFor={widget.selected ? undefined : this.tapRef} // Wait only if the widget is not selected
+          >
+            <Animated.View
+              style={[
+                styles.item,
+                {
+                  transform: [
+                    { translateX: this._translateX },
+                    { translateY: this._translateY },
+                  ],
+                },
+              ]}
             >
-              <Animated.View
-                style={[
-                  styles.item,
-                  {
-                    transform: [
-                      { translateX: this._translateX },
-                      { translateY: this._translateY },
-                    ],
-                  },
-                ]}
-              >
-
-                <Widget widget={widget} />
-
-              </Animated.View>
-            </PanGestureHandler>
-          </Animated.View>
-        </TapGestureHandler>
-      </LongPressGestureHandler>
+              <Widget widget={widget} dragging={dragging} />
+            </Animated.View>
+          </PanGestureHandler>
+        </Animated.View>
+      </TapGestureHandler>
     );
   }
 }

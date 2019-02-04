@@ -10,9 +10,13 @@ const styles = StyleSheet.create({
     borderColor: 'blue',
     borderWidth: 2,
   },
+  dragging: {
+    borderColor: 'red',
+    borderWidth: 2,
+  },
 });
 
-export default function Widget({ widget }) {
+export default function Widget({ widget, dragging }) {
   return (
     <View
       style={[
@@ -22,6 +26,7 @@ export default function Widget({ widget }) {
           backgroundColor: widget.backgroundColor,
         },
         widget.selected ? styles.selected : undefined,
+        dragging && !widget.selected ? styles.dragging : undefined,
       ]}
     />
   );
